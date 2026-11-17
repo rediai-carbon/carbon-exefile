@@ -252,7 +252,7 @@ CommandLine ParseCommandLine()
 	auto rawCommandLine = SplitCommandLine( GetCommandLineW() );
 	return ExpandCommandLineWithFiles( ExpandCommandLineWithEnvironment( rawCommandLine ) );
 }
-#elif __APPLE__
+#elif defined(__APPLE__) || defined(__linux__)
 CommandLine ParseCommandLine( int argc, char* argv[] )
 {
 	CommandLine rawCommandLine;
@@ -273,7 +273,7 @@ int _wtoi( const wchar_t* str )
 
 void DumpCommandLineToDebugger( const CommandLine& commandLine )
 {
-#if __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 	if ( !CcpIsDebuggerPresent() ) {
 		return;
 	}
@@ -284,7 +284,7 @@ void DumpCommandLineToDebugger( const CommandLine& commandLine )
 #if _WIN32
         OutputDebugStringW( it->c_str() );
         OutputDebugStringW( L"\n" );
-#elif __APPLE__
+#elif defined(__APPLE__) || defined(__linux__)
         wprintf(L"%ls\n", it->c_str());
 #else
 #error "Unsupported platform!"

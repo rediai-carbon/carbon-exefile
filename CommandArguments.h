@@ -41,7 +41,7 @@ typedef std::vector<std::wstring> CommandLine;
 
 #if _WIN32
 CommandLine ParseCommandLine();
-#elif __APPLE__
+#elif defined(__APPLE__) || defined(__linux__)
 CommandLine ParseCommandLine( int argc, char* argv[] );
 #endif
 

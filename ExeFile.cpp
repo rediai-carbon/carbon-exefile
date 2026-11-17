@@ -3,7 +3,7 @@
 #include "ExeFile.h"
 #include "Crashpad.h"
 #include "BlueInterface.h"
-#include <CCPLog.h>
+#include <CcpLog.h>
 
 #include <errno.h>
 #include <string>
@@ -322,7 +322,7 @@ bool ConfigurePython( BlueInterface& blue, bool interpreterMode )
 
 #if _WIN32
 	for( std::wstring tmp; std::getline( pathHelper, tmp, L';' ); )
-#elif __APPLE__
+#elif defined(__APPLE__) || defined(__linux__)
 	for( std::wstring tmp; std::getline( pathHelper, tmp, L':' ); )
 #else
 #error Unknown env var separator on this platform
