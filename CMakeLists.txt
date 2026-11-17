@@ -103,12 +103,19 @@ set_target_properties(Exefile PROPERTIES CMAKE_ARCHIVE_OUTPUT_DIRECTORY  "exefil
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set (INSTALL_TO_MONOLITH OFF CACHE BOOL "Install this package to a perforce branch vendor folder - provided for backwards compatability")
 
+    get_target_property(crashpad_handler_location crashpad::handler IMPORTED_LOCATION_RELEASE)
+    if(NOT crashpad_handler_location)
+        get_target_property(crashpad_handler_location crashpad::handler IMPORTED_LOCATION)
+    endif()
+
     if (INSTALL_TO_MONOLITH)
         # Install rule to ensure that our runtime and linker files are in the expected, platform-specific folders
+        if(crashpad_handler_location)
         install(
                 IMPORTED_RUNTIME_ARTIFACTS crashpad::handler
                 DESTINATION bin/${CCP_PLATFORM}/${CCP_ARCHITECTURE}/${CCP_TOOLSET}/
         )
+        endif()
         install(
                 TARGETS Exefile
                 EXPORT ExefileTargets
@@ -116,7 +123,9 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
                 RUNTIME DESTINATION bin/${CCP_PLATFORM}/${CCP_ARCHITECTURE}/${CCP_TOOLSET}/
         )
     else() # "VCPKG" INSTALL_MODE, but there's no need for another option, as this will be the default
+        if(crashpad_handler_location)
         install(IMPORTED_RUNTIME_ARTIFACTS crashpad::handler)
+        endif()
         install(
                 TARGETS Exefile
                 EXPORT ExefileTargets
