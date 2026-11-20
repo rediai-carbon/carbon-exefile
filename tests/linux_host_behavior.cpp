@@ -82,6 +82,9 @@ int main()
 	Check( arguments.buildFlavor == L"internal", "/buildflavor=internal is preserved" );
 	Check( arguments.affinity == 1, "/aflock=1 is preserved" );
 	Check( !arguments.uploadMinidump, "/nocrashreportupload disables upload" );
+	char* bareArgv[] = { arg0 };
+	CommandArguments bareArguments = GetCommandArguments( ParseCommandLine( 1, bareArgv ) );
+	Check( !bareArguments.uploadMinidump, "Linux leaves crash uploads disabled by default" );
 	bool foundPath = false;
 	for( const std::wstring& path : arguments.searchPaths )
 	{

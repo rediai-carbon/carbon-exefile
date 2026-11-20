@@ -13,6 +13,9 @@
 
 #include <fstream>
 #include <sstream>
+#if defined(__linux__)
+#include <sys/stat.h>
+#endif
 
 #include "CommandArguments.h"
 
@@ -330,6 +333,37 @@ bool ConfigurePython( BlueInterface& blue, bool interpreterMode )
 	{
 		status = PyWideStringList_Append( &( config.module_search_paths ), tmp.c_str() );
 		CCP_LOG( "Appending %S to sys.path candidate list (error %d: %s)", tmp.c_str(), status.exitcode, status.err_msg );
+#if defined(__linux__)
+		// An explicit module search path replaces Python's calculated path, which
+		// includes <stdlib>/lib-dynload. Keep that directory when the stdlib entry is present.
+		if( !tmp.empty() )
+		{
+			std::wstring dynload = tmp;
+			if( dynload.back() != L'/' && dynload.back() != L'\\' )
+			{
+				dynload += L'/';
+			}
+			dynload += L"lib-dynload";
+			std::string narrow;
+			narrow.reserve( dynload.size() );
+			bool ascii = true;
+			for( wchar_t character : dynload )
+			{
+				if( character > 0x7f )
+				{
+					ascii = false;
+					break;
+				}
+				narrow.push_back( static_cast<char>( character ) );
+			}
+			struct stat directory = {};
+			if( ascii && stat( narrow.c_str(), &directory ) == 0 && S_ISDIR( directory.st_mode ) )
+			{
+				status = PyWideStringList_Append( &( config.module_search_paths ), dynload.c_str() );
+				CCP_LOG( "Appending %S to sys.path candidate list (error %d: %s)", dynload.c_str(), status.exitcode, status.err_msg );
+			}
+		}
+#endif
 	}
 	config.module_search_paths_set = 1;
 

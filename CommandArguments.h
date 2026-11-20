@@ -25,7 +25,11 @@ struct CommandArguments
 
 	CommandArguments()
 		:consoleMode( console_mode_create ),
+#if defined(__linux__)
+		uploadMinidump( false ),
+#else
 		uploadMinidump( true ),
+#endif
 		affinity( -1 ),
 #ifdef _DEBUG
 		pyOptimize( -1 ),
