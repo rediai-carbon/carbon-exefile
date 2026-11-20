@@ -5,6 +5,10 @@
 #define STRICT
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 
+#if defined(__linux__) && !defined(__cdecl)
+#define __cdecl
+#endif
+
 
 // comment this out if you want python
 //#define NOPYTHON

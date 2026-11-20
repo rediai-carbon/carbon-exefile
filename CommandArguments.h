@@ -25,7 +25,11 @@ struct CommandArguments
 
 	CommandArguments()
 		:consoleMode( console_mode_create ),
+#if defined(__linux__)
+		uploadMinidump( false ),
+#else
 		uploadMinidump( true ),
+#endif
 		affinity( -1 ),
 #ifdef _DEBUG
 		pyOptimize( -1 ),
@@ -41,7 +45,7 @@ typedef std::vector<std::wstring> CommandLine;
 
 #if _WIN32
 CommandLine ParseCommandLine();
-#elif __APPLE__
+#elif defined(__APPLE__) || defined(__linux__)
 CommandLine ParseCommandLine( int argc, char* argv[] );
 #endif
 

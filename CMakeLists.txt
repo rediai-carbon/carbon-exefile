@@ -12,6 +12,21 @@ find_package(crashpad CONFIG REQUIRED)
 find_package(carbon-core CONFIG REQUIRED)
 find_package(Python3 COMPONENTS Development REQUIRED)
 
+# Windows and macOS keep both platform files. Linux compiles only its own
+# platform files, so Objective-C++ is not enabled on this host.
+set(PLATFORM_SOURCES
+        ExeFileOsX.mm
+        ExeFileWin32.cpp
+        FileSystemOsX.mm
+        FileSystemWin32.cpp
+        )
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(PLATFORM_SOURCES
+            ExeFileLinux.cpp
+            FileSystemLinux.cpp
+            )
+endif()
+
 ccp_add_executable(Exefile
         autoversion.h
         BlueInterface.cpp
@@ -22,11 +37,8 @@ ccp_add_executable(Exefile
         Crashpad.h
         ExeFile.cpp
         ExeFile.h
-        ExeFileOsX.mm
-        ExeFileWin32.cpp
+        ${PLATFORM_SOURCES}
         FileSystem.h
-        FileSystemOsX.mm
-        FileSystemWin32.cpp
         resource.h
         StdAfx.cpp
         StdAfx.h
@@ -62,6 +74,19 @@ if(APPLE)
     )
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(Exefile PRIVATE ${CMAKE_DL_LIBS})
+    set_target_properties(
+            Exefile
+            PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "\$ORIGIN"
+            INSTALL_RPATH_USE_LINK_PATH FALSE
+            # Crashpad's static libraries in this closure are ordinary objects.
+            INTERPROCEDURAL_OPTIMIZATION OFF
+    )
+endif()
+
 target_compile_definitions(Exefile PRIVATE BLUEBUILD_STATIC CRASH_REPORTS_ENABLED)
 
 target_link_libraries(Exefile PUBLIC CcpCore crashpad::crashpad Python3::Python)
@@ -78,12 +103,19 @@ set_target_properties(Exefile PROPERTIES CMAKE_ARCHIVE_OUTPUT_DIRECTORY  "exefil
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set (INSTALL_TO_MONOLITH OFF CACHE BOOL "Install this package to a perforce branch vendor folder - provided for backwards compatability")
 
+    get_target_property(crashpad_handler_location crashpad::handler IMPORTED_LOCATION_RELEASE)
+    if(NOT crashpad_handler_location)
+        get_target_property(crashpad_handler_location crashpad::handler IMPORTED_LOCATION)
+    endif()
+
     if (INSTALL_TO_MONOLITH)
         # Install rule to ensure that our runtime and linker files are in the expected, platform-specific folders
+        if(crashpad_handler_location)
         install(
                 IMPORTED_RUNTIME_ARTIFACTS crashpad::handler
                 DESTINATION bin/${CCP_PLATFORM}/${CCP_ARCHITECTURE}/${CCP_TOOLSET}/
         )
+        endif()
         install(
                 TARGETS Exefile
                 EXPORT ExefileTargets
@@ -91,7 +123,9 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
                 RUNTIME DESTINATION bin/${CCP_PLATFORM}/${CCP_ARCHITECTURE}/${CCP_TOOLSET}/
         )
     else() # "VCPKG" INSTALL_MODE, but there's no need for another option, as this will be the default
+        if(crashpad_handler_location)
         install(IMPORTED_RUNTIME_ARTIFACTS crashpad::handler)
+        endif()
         install(
                 TARGETS Exefile
                 EXPORT ExefileTargets
@@ -99,4 +133,30 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
                 RUNTIME DESTINATION bin/
         )
     endif()
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    add_executable(ExefileLinuxHostBehavior
+            tests/linux_host_behavior.cpp
+            CommandArguments.cpp
+            FileSystemLinux.cpp
+            ExeFileLinux.cpp
+            Crashpad.cpp
+            StdAfx.cpp
+            )
+    target_include_directories(ExefileLinuxHostBehavior PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_precompile_headers(ExefileLinuxHostBehavior PRIVATE StdAfx.h)
+    target_compile_definitions(ExefileLinuxHostBehavior PRIVATE BLUEBUILD_STATIC CRASH_REPORTS_ENABLED FE8_EXEFILE_HOST_TEST)
+    target_link_libraries(ExefileLinuxHostBehavior PRIVATE CcpCore crashpad::crashpad Python3::Python ${CMAKE_DL_LIBS})
+    set_target_properties(
+            ExefileLinuxHostBehavior
+            PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "\$ORIGIN"
+            INSTALL_RPATH_USE_LINK_PATH FALSE
+            INTERPROCEDURAL_OPTIMIZATION OFF
+    )
+    enable_testing()
+    add_test(NAME ExefileLinuxHostBehavior COMMAND ExefileLinuxHostBehavior)
+    set_tests_properties(ExefileLinuxHostBehavior PROPERTIES TIMEOUT 60)
 endif()

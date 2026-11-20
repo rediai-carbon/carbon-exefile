@@ -2,7 +2,7 @@
 #include "StdAfx.h"
 #include "BlueInterface.h"
 
-#if __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 #include <dlfcn.h>
 #endif
 
@@ -11,7 +11,7 @@ BlueInterface::~BlueInterface()
 {
 	if( m_module )
 	{
-#if __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 		dlclose( m_module );
 #elif _WIN32
 		FreeLibrary( static_cast<HMODULE>( m_module ) );
@@ -32,7 +32,7 @@ bool BlueInterface::LoadBlue( const std::wstring& buildFlavor )
 
 	std::wstring name = L"blue" + ( buildFlavor.empty() ? L"" : L"_" + buildFlavor );
 
-#if __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 	std::string str = std::string( std::begin( name ), std::end( name ) ) + ".so";
 	m_module = dlopen( str.c_str(), RTLD_LAZY );
 #elif _WIN32
@@ -47,7 +47,7 @@ bool BlueInterface::LoadBlue( const std::wstring& buildFlavor )
 		return false;
 	}
 
-#if __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 #define LoadBlueRoutine( name )                                                                                                \
 	if( !( m_blue##name##Routine = reinterpret_cast<Blue##name##Routine>( dlsym( m_module, CCP_STRINGIZE( Blue##name ) ) ) ) ) \
 	{                                                                                                                          \

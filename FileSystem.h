@@ -1,7 +1,7 @@
 // Copyright © 2021 CCP ehf.
 #pragma once
 
-#if __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
 std::string GetAppdataFolder();
 #elif _WIN32
 std::wstring GetAppdataFolder();
