@@ -89,7 +89,17 @@ endif()
 
 target_compile_definitions(Exefile PRIVATE BLUEBUILD_STATIC CRASH_REPORTS_ENABLED)
 
-target_link_libraries(Exefile PUBLIC CcpCore crashpad::crashpad Python3::Python)
+target_link_libraries(Exefile PUBLIC CcpCore crashpad::crashpad)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # Extensions are separate modules. The static interpreter has to be complete
+    # and visible, or their Python calls bind nowhere.
+    target_include_directories(Exefile PRIVATE ${Python3_INCLUDE_DIRS})
+    target_link_options(Exefile PRIVATE
+        "SHELL:-Wl,--export-dynamic"
+        "SHELL:-Wl,--whole-archive ${Python3_LIBRARIES} -Wl,--no-whole-archive")
+else()
+    target_link_libraries(Exefile PUBLIC Python3::Python)
+endif()
 
 target_include_directories(Exefile
         PRIVATE
