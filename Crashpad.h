@@ -36,4 +36,13 @@ private:
 
 CrashpadCrashInterface* GetCrashReporter();
 
+#else
+
+// Debug builds omit Crashpad. Callers still need a declaration, and they
+// already treat a null reporter as "reporting unavailable."
+inline ICrashReporter* GetCrashReporter()
+{
+	return nullptr;
+}
+
 #endif
