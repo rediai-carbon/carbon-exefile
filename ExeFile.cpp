@@ -562,10 +562,12 @@ int Main(const CommandLine& commandLine, bool isSupportedOS)
 	}
 
 	auto crashReporter = GetCrashReporter();
+#if !_DEBUG
 	if( crashReporter && commandArguments.uploadMinidump )
 	{
 		crashReporter->InitializeCrashpad();
 	}
+#endif
 	// Tell Blue about our crash interface so that it can change settings
 	blue.SetCrashReporter( crashReporter );
 
