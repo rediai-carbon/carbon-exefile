@@ -91,12 +91,24 @@ target_compile_definitions(Exefile PRIVATE BLUEBUILD_STATIC CRASH_REPORTS_ENABLE
 
 target_link_libraries(Exefile PUBLIC CcpCore crashpad::crashpad)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    # Extensions are separate modules. The static interpreter has to be complete
-    # and visible, or their Python calls bind nowhere.
+    # Extension modules bind Python symbols from this executable. A static
+    # libpython has to be pulled into the executable. A shared libpython does
+    # not: --whole-archive does not record DT_NEEDED, so the symbols stay
+    # undefined. Windows and every non-Linux host keep the imported target.
     target_include_directories(Exefile PRIVATE ${Python3_INCLUDE_DIRS})
-    target_link_options(Exefile PRIVATE
-        "SHELL:-Wl,--export-dynamic"
-        "SHELL:-Wl,--whole-archive ${Python3_LIBRARIES} -Wl,--no-whole-archive")
+    target_link_options(Exefile PRIVATE "SHELL:-Wl,--export-dynamic")
+    set(_exefile_python_static FALSE)
+    foreach(_exefile_python_lib IN LISTS Python3_LIBRARIES)
+        if(_exefile_python_lib MATCHES "\\.(a|lib)$")
+            set(_exefile_python_static TRUE)
+        endif()
+    endforeach()
+    if(_exefile_python_static)
+        target_link_options(Exefile PRIVATE
+            "SHELL:-Wl,--whole-archive ${Python3_LIBRARIES} -Wl,--no-whole-archive")
+    else()
+        target_link_libraries(Exefile PUBLIC Python3::Python)
+    endif()
 else()
     target_link_libraries(Exefile PUBLIC Python3::Python)
 endif()
